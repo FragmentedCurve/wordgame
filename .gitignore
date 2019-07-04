@@ -1,0 +1,6 @@
+*~
+*#
+*.o
+build/*
+src/dicts/*.c
+
