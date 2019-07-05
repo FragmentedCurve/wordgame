@@ -16,12 +16,12 @@ struct ActionButtons {
 	HWND quit;
 };
 
-internal const char *B_TITLE_NEWGAME = "New Game";
-internal const char *B_TITLE_SHUFFLE = "Shuffle";
-internal const char *B_TITLE_QUIT    = "Quit";
-internal struct ActionButtons buttons = {0};
+global const char *B_TITLE_NEWGAME = "New Game";
+global const char *B_TITLE_SHUFFLE = "Shuffle";
+global const char *B_TITLE_QUIT    = "Quit";
+global struct ActionButtons buttons = {0};
 
-static WINDOWSIZE GetButtonSize(HWND w)
+internal WINDOWSIZE GetButtonSize(HWND w)
 {
 	WINDOWSIZE bsize = {0};
 	WINDOWSIZE wsize = GetWindowSize(w);
@@ -42,11 +42,13 @@ static LRESULT CALLBACK ActionWindowProc(HWND window, UINT msg, WPARAM wparam, L
 			switch (cmd) {
 			case B_CMD_NEWGAME:
 				{
-					DEBUG("New game!");
+					HWND parent = GetParent(window);
+					PostMessage(parent, WM_NEWGAME, 0, 0);
 				} break;
 			case B_CMD_SHUFFLE:
 				{
-					DEBUG("Do the Shuffle!");
+					HWND parent = GetParent(window);
+					PostMessage(parent, WM_SHUFFLE, 0, 0);
 				} break;
 			case B_CMD_QUIT:
 				{

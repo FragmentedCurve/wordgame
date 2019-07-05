@@ -10,6 +10,12 @@
 #define RATIO_INPUT  3.0/10.0
 #define RATIO_STATUS 1.0/10.0
 
+/* WINAPI Messages */
+#define WM_PLAYERINPUT   (WM_USER + 1)   // LPARAM = pointer to string to display.
+#define WM_GAMELETTERS   (WM_USER + 2)   // Lparam = pointer to string to display.
+#define WM_NEWGAME       (WM_USER + 3)
+#define WM_SHUFFLE       (WM_USER + 4)
+
 extern const char *CLASS_NAME_MAIN;
 extern const char *CLASS_NAME_ACTION;
 extern const char *CLASS_NAME_STATUS;   
@@ -26,11 +32,6 @@ typedef struct WINDOWSIZE {
 	UINT width;
 	UINT height;
 } WINDOWSIZE;
-
-typedef struct GAMESTATE {
-	char play_buffer[WORD_SIZE];
-	char available[ALPHABET_SIZE];
-} GAMESTATE;
 
 /* mm.c */
 WINDOWSIZE GetWindowSize(HWND window);

@@ -1,8 +1,10 @@
 #include <windows.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <common.h>
+
+#include "common.h"
 #include "mm.h"
+#include "dict.h"
 
 #define MAIN_WIDTH  1000
 #define MAIN_HEIGHT 600
@@ -19,11 +21,12 @@ const char *TITLE_STATUS    = "Status";
 const char *TITLE_INPUT     = "Input";
 const char *TITLE_PLAYBOARD = "Playboard";
 
-GAMESTATE game_state = {0};
+/* TODO: Find a way of preventing these from being global. */
+global HWND main;
+global HWND action;
+global HWND input;
 
-internal HWND main;
-internal HWND action;
-internal HWND input;
+global Game game = {0};
 
 WINDOWSIZE GetWindowSize(HWND window)
 {
@@ -35,24 +38,57 @@ WINDOWSIZE GetWindowSize(HWND window)
 	return size;
 }
 
-LRESULT CALLBACK PlayboardWindowProc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam)
+void player_input(Game game, char c)
 {
-	return DefWindowProc(window, msg, wparam, lparam);
-}
+	GameError result = NONE;
+	
+	if (c >= 'A' && c <= 'Z') {
+		result = input_char(game, c);
+	} else if (c == VK_BACK) {
+		result = delete_char(game);
+	} else if (c == VK_RETURN) {
+		result = check(game);
+	}
 
-LRESULT CALLBACK StatusWindowProc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam)
-{
-	return DefWindowProc(window, msg, wparam, lparam);
+	// TODO: Handle errors correctly
+	switch (result) {
+	case NONE:
+		{
+			// TODO: Send a correct message to the input window.
+			PostMessage(input, WM_PLAYERINPUT, 0, (LPARAM) game.play_buffer);
+		} break;
+	case INPUT_FULL:
+		{
+			DEBUG("Input Full!");
+		} break;
+	default:
+		{
+			DEBUG("Something else");
+		} break;
+	}
 }
 
 LRESULT CALLBACK MainWindowProc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	switch (msg) {
 	case WM_KEYUP:
+
 		{
 			char c = wparam;
-			if (c == VK_RETURN || (c >= 'A' && c <= 'Z'))
-				PostMessage(input, msg, wparam, lparam);
+			player_input(game, c);
+		} break;
+	case WM_COMMAND:
+	case WM_NEWGAME:
+		{
+			reset_game(&game, WORD_SIZE);
+			PostMessage(input, WM_PLAYERINPUT, 0, (LPARAM) game.play_buffer);
+			PostMessage(input, WM_GAMELETTERS, 0, (LPARAM) game.letters);
+		} break;
+	case WM_SHUFFLE:
+		{
+			shuffle(game);
+			PostMessage(input, WM_GAMELETTERS, 0, (LPARAM) game.letters);
+			break;
 		} break;
 	case WM_DESTROY:
 		{
@@ -61,68 +97,6 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT msg, WPARAM wparam, LPARAM lpa
 	}
 	
 	return DefWindowProc(window, msg, wparam, lparam);
-}
-
-BOOL PlayboardMakeWindow(HWND *action, HINSTANCE instance)
-{
-	WNDCLASS wc = {0};
-	HBRUSH bg_brush = CreateSolidBrush(BGCOLOR);
-
-	wc.style = CS_HREDRAW | CS_VREDRAW;
-	wc.lpfnWndProc = PlayboardWindowProc;
-	wc.hInstance = instance;
-	wc.hbrBackground = bg_brush;
-	wc.lpszClassName = CLASS_NAME_PLAYBOARD;
-
-	if (!RegisterClass(&wc)) {
-		return FALSE;
-	}
-	
-	*action = CreateWindow(
-						CLASS_NAME_PLAYBOARD,
-						TITLE_PLAYBOARD,
-						WS_OVERLAPPEDWINDOW,
-						CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-						0, 0,
-						instance,
-						0);
-	if (!*action) {
-		*action = NULL;
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
-BOOL StatusMakeWindow(HWND *action, HINSTANCE instance)
-{
-	WNDCLASS wc = {0};
-	HBRUSH bg_brush = CreateSolidBrush(BGCOLOR);
-
-	wc.style = CS_HREDRAW | CS_VREDRAW;
-	wc.lpfnWndProc = StatusWindowProc;
-	wc.hInstance = instance;
-	wc.hbrBackground = bg_brush;
-	wc.lpszClassName = CLASS_NAME_STATUS;
-
-	if (!RegisterClass(&wc)) {
-		return FALSE;
-	}
-	
-	*action = CreateWindow(
-						CLASS_NAME_STATUS,
-						TITLE_STATUS,
-						WS_OVERLAPPEDWINDOW,
-						CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-						0, 0,
-						instance,
-						0);
-	if (!*action) {
-		*action = NULL;
-		return FALSE;
-	}
-
-	return TRUE;
 }
 
 BOOL MainMakeWindow(HWND *hwnd, UINT width, UINT height, HINSTANCE instance)
@@ -160,26 +134,20 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, 
 	BOOL result;
 	
 	result = MainMakeWindow(&main, MAIN_WIDTH, MAIN_HEIGHT, instance);
-	
 	if (!result)
 		return 0;
 
 	result = ActionMakeWindow(&action, main, instance);
-	
 	if (!result)
 		return 0;
 
 	result = InputMakeWindow(&input, main, instance);
-
 	if (!result)
 		return 0;
 
 	ShowWindow(main, cmd_show);
-	/*
-	FILE *dict = fopen("resources/en-common.wl", "r");
-	Game game = new_game(dict, WORD_SIZE);
-	fclose(dict);
-	*/
+	game = new_game(wl_common6, wl_common6_len, WORD_SIZE, WORD_SIZE);
+
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0)) {
 		TranslateMessage(&msg);
