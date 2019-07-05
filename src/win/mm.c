@@ -54,7 +54,6 @@ void player_input(Game game, char c)
 	switch (result) {
 	case NONE:
 		{
-			// TODO: Send a correct message to the input window.
 			PostMessage(input, WM_PLAYERINPUT, 0, (LPARAM) game.play_buffer);
 		} break;
 	case INPUT_FULL:
@@ -77,7 +76,6 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT msg, WPARAM wparam, LPARAM lpa
 			char c = wparam;
 			player_input(game, c);
 		} break;
-	case WM_COMMAND:
 	case WM_NEWGAME:
 		{
 			reset_game(&game, WORD_SIZE);
