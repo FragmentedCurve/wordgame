@@ -70,6 +70,7 @@ void reset_game(Game *game, unsigned int word_size)
 	game->word_size = word_size;
 	game->played_words = new_trienode();
 	game->letters = rand_letters(game->word_size, game->repeat_max);
+	memset(game->play_buffer, 0, game->word_size);
 }
 
 void shuffle(Game game)
@@ -88,12 +89,23 @@ void shuffle(Game game)
 
 GameError input_char(Game game, char c)
 {
-	int n = strlen(game.letters);
+	int n = strlen(game.play_buffer);
 	
 	if (n == game.word_size)
 		return INPUT_FULL;
 
-	game.letters[n] = c;
+	game.play_buffer[n] = c;
+	return NONE;
+}
+GameError delete_char(Game game)
+{
+	int n = strlen(game.play_buffer);
+
+	// TODO: Pick a proper return value.
+	if (n == 0)
+		return INPUT_FULL;
+
+	game.play_buffer[n - 1] = '\0';
 	return NONE;
 }
 

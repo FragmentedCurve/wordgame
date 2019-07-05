@@ -7,9 +7,11 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#define ALPHABET_SIZE 26
-#define internal static
-#define persist static
+#define ALPHABET_SIZE 26 // TODO: Make the alphabet variable to support any kind of wordlist.
+
+#define internal static  // internal static functions
+#define global static    // global variables
+#define persist static   // local persistent static variables
 
 typedef struct TrieNode TrieNode;
 struct TrieNode {
@@ -52,6 +54,8 @@ Game new_game(const char* const word_list[], unsigned int wl_len, unsigned int w
 void destroy_game(Game game);
 void reset_game(Game *game, unsigned int word_size);
 void shuffle(Game game);
+GameError input_char(Game game, char c);
+GameError delete_char(Game game);
 
 /* words.c */
 bool is_word_alpha(const char *word);
