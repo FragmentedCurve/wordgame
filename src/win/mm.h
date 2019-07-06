@@ -5,7 +5,7 @@
 
 #define WORD_SIZE 6
 
-// TODO: These ratio definitions might be obsolete
+/* Ratios of Y axis window stack */
 #define RATIO_ACTION 1.0/10.0
 #define RATIO_INPUT  2.0/10.0
 #define RATIO_STATUS 1.0/10.0
@@ -15,11 +15,6 @@
 #define WM_GAMELETTERS   (WM_USER + 2)   // Lparam = pointer to string to display.
 #define WM_NEWGAME       (WM_USER + 3)
 #define WM_SHUFFLE       (WM_USER + 4)
-
-/* WNDCLASS LONG_PTR Indexes */
-#define INDEX_GAME    0
-#define INDEX_WINPUT  1 * sizeof(LONG_PTR)
-#define INDEX_WACTION 2 * sizeof(LONG_PTR)
 
 extern const char *CLASS_NAME_MAIN;
 extern const char *CLASS_NAME_ACTION;

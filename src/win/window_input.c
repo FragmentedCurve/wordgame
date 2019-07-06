@@ -6,8 +6,39 @@
 
 #define MY_INDEX_INPUT   0
 #define MY_INDEX_LETTERS 1 * sizeof(LONG_PTR)
+#define MY_INDEX_FONT    2 * sizeof(LONG_PTR)
 
 #define Y_OFFSET (1 - (RATIO_ACTION + RATIO_STATUS + RATIO_INPUT))
+
+
+internal HFONT MakeFont(HWND window, int width, int height)
+{
+	// TODO: Tweak the fonts, make them look good.
+	HFONT font = (HFONT) GetWindowLongPtr(window, MY_INDEX_FONT);
+
+	if (!font)
+		DeleteObject(font);
+	
+	font = CreateFontA(
+					   height / 2, // int    cHeight,
+					   width / 12, // int    cWidth,
+					   0,          // int    cEscapement,
+					   0,          // int    cOrientation,
+					   FW_BLACK,   // int    cWeight,
+					   0, // DWORD  bItalic,
+					   0, // DWORD  bUnderline,
+					   0, // DWORD  bStrikeOut,
+					   0, // DWORD  iCharSet,
+					   0, // DWORD  iOutPrecision,
+					   0, // DWORD  iClipPrecision,
+					   0, // DWORD  iQuality,
+					   0, // DWORD  iPitchAndFamily,
+					   0  // LPCSTR pszFaceName
+					   );
+
+	SetWindowLongPtr(window, MY_INDEX_FONT, (LONG_PTR) font);
+	return font;
+}
 
 static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -37,7 +68,10 @@ static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LP
 						 NULL,
 						 0, wsize.height / 2, wsize.width, wsize.height / 2,
 						 (SWP_NOZORDER | SWP_SHOWWINDOW));
-			
+
+			HFONT font = MakeFont(window, wsize.width, wsize.height);
+			SendMessage(input_text, WM_SETFONT, (WPARAM) font, TRUE);
+			SendMessage(letters_text, WM_SETFONT, (WPARAM) font, TRUE);
 		} break;
 	case WM_PLAYERINPUT:
 		{
@@ -72,7 +106,7 @@ static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LP
 
 			WINDOWSIZE wsize = GetWindowSize(window);
 			CREATESTRUCT cs = *((CREATESTRUCT *) lparam);
-			
+
 			input_text = CreateWindow(
 									  "STATIC",
 									  "",
@@ -91,6 +125,11 @@ static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LP
 									  0,
 									  cs.hInstance,
 									  0);
+
+			HFONT font = MakeFont(window, wsize.width, wsize.height);
+			SendMessage(input_text, WM_SETFONT, (WPARAM) font, TRUE);
+			SendMessage(letters_text, WM_SETFONT, (WPARAM) font, TRUE);
+			
 			SetWindowLongPtr(window, MY_INDEX_INPUT, (LONG_PTR) input_text);
 			SetWindowLongPtr(window, MY_INDEX_LETTERS, (LONG_PTR) letters_text);
 		} break;

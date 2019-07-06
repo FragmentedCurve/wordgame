@@ -9,6 +9,11 @@
 #define MAIN_WIDTH  300
 #define MAIN_HEIGHT 600
 
+/* WNDCLASS LONG_PTR Indexes */
+#define INDEX_GAME    0
+#define INDEX_WINPUT  1 * sizeof(LONG_PTR)
+#define INDEX_WACTION 2 * sizeof(LONG_PTR)
+
 const char *CLASS_NAME_MAIN      = "Main";
 const char *CLASS_NAME_ACTION    = "Action";
 const char *CLASS_NAME_STATUS    = "Status";
@@ -20,7 +25,6 @@ const char *TITLE_ACTION    = "Action";
 const char *TITLE_STATUS    = "Status";
 const char *TITLE_INPUT     = "Input";
 const char *TITLE_PLAYBOARD = "Playboard";
-
 
 WINDOWSIZE GetWindowSize(HWND window)
 {
@@ -44,7 +48,6 @@ internal void player_input(Game game, HWND input, char c)
 		result = play(game);
 	}
 
-	// TODO: Handle errors correctly
 	switch (result) {
 	case NONE:
 		{
@@ -52,11 +55,11 @@ internal void player_input(Game game, HWND input, char c)
 		} break;
 	case INPUT_BUF_FULL:
 		{
-			DEBUG("Too many letters!");
+			//DEBUG("Too many letters!");
 		} break;
 	case INPUT_BUF_EMPTY:
 		{
-			DEBUG("No letters to delete.");
+			//DEBUG("No letters to delete.");
 		} break;
 	case WORD_PLAYED:
 		{
@@ -84,12 +87,22 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT msg, WPARAM wparam, LPARAM lpa
 	HWND action = (HWND) GetWindowLongPtr(window, INDEX_WACTION);
 
 	switch (msg) {
+	case WM_CREATE:
+		{
+			CREATESTRUCT cs = *((CREATESTRUCT *) lparam);
+			
+			ActionMakeWindow(&action, window, cs.hInstance);
+			InputMakeWindow(&input, window, cs.hInstance);
+
+			SetWindowLongPtr(window, INDEX_WINPUT, (LONG_PTR) input);
+			SetWindowLongPtr(window, INDEX_WACTION, (LONG_PTR) action);
+		} break;
 	case WM_SIZE:
 		{
 			SendMessage(action, msg, wparam, lparam);
 			SendMessage(input, msg, wparam, lparam);
 		} break;
-	case WM_KEYUP:
+	case WM_KEYDOWN:
 		{
 			char c = wparam;
 			player_input(*game, input, c);
@@ -151,29 +164,23 @@ BOOL MainMakeWindow(HWND *hwnd, UINT width, UINT height, HINSTANCE instance)
 int WINAPI WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int cmd_show)
 {
 	BOOL result;
-	Game game;
 	HWND main;
-	HWND action;
 	HWND input;
-	
+	Game game = {0};
+
 	result = MainMakeWindow(&main, MAIN_WIDTH, MAIN_HEIGHT, instance);
 	if (!result)
 		return 0;
 
-	result = ActionMakeWindow(&action, main, instance);
-	if (!result)
-		return 0;
-
-	result = InputMakeWindow(&input, main, instance);
-	if (!result)
-		return 0;
-
 	ShowWindow(main, cmd_show);
+
+	// Doing this in WM_CREATE throws an "Exception 0xc0000005".
+	// Don't know why. Possibly due to recusion
 	game = new_game(wl_common6, wl_common6_len, WORD_SIZE, WORD_SIZE);
 	SetWindowLongPtr(main, INDEX_GAME, (LONG_PTR) &game);
-	SetWindowLongPtr(main, INDEX_WINPUT, (LONG_PTR) input);
-	SetWindowLongPtr(main, INDEX_WACTION, (LONG_PTR) action);
-	
+	input = (HWND) GetWindowLongPtr(main, INDEX_WINPUT);
+	SendMessage(input, WM_GAMELETTERS, 0, (LPARAM) game.letters);
+
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0)) {
 		TranslateMessage(&msg);
