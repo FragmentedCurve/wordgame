@@ -76,7 +76,7 @@ internal void run_game(Game game)
 			continue;
 		}
 		
-		switch (check_word(game, word)) {
+		switch (play_word(game, word)) {
 		case NOT_ALPHA:
 			puts("Only letters! No symbols or numbers!");
 			break;
@@ -86,15 +86,12 @@ internal void run_game(Game game)
 		case WORD_PLAYED:
 			puts("Do ya got alzheimer's? You played that word already.");
 			break;
+		case INCORRECT_WORD:
+			puts("Good guess but no reward.");
+			break;
 		default:
-			{
-				if (word_exists(game.words, word)) {
-					puts("Winner winner chicken dinner!");
-					insert_word(game.played_words, word);
-				} else {
-					puts("Good guess but no reward.");
-				}
-			} break;
+			puts("Winner winner chicken dinner!");
+			break;
 		}
 	} while(running);
 }
