@@ -93,7 +93,7 @@ build() {
 			;;
 		'WINDOWS')
 			BUILD=(${WIN_BUILD[@]})
-			link='clang -o build/termwords -l user32.lib -l gdi32.lib build/trie.o build/words.o build/game.o build/common6.o build/mm.o build/window_action.o build/window_input.o'
+			link='clang -o build/mm.exe -l user32.lib -l gdi32.lib build/trie.o build/words.o build/game.o build/common6.o build/mm.o build/window_action.o build/window_input.o'
 			;;
 	esac
 	
