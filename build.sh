@@ -1,8 +1,22 @@
 #!/bin/sh
+
+### REQUIREMENTS TO USE THIS BUILD SYSTEM
+###
+### Shells: Bash
+### Commands:
+###     seq
+###     [ (test)
+###     echo
+###     stat
+
 CC=clang  # if you change this, you might have to change every command
 DEBUG_CFLAGS='-g -O0 -std=c99 -Isrc/common/ -Isrc/dicts/'
 CFLAGS='-O2 -std=c99 -Isrc/common/ -Isrc/dicts/'
 
+where_am_i() {
+	[ -e "C:\\" ] && echo "WINDOWS"
+	[ `uname` = "Linux" ] && echo "LINUX"
+}
 
 # is_changed [object file] [source file]
 is_changed() {
@@ -13,22 +27,30 @@ is_changed() {
 
 # compile_all [compile command]
 # compile command interface: command [object file] [source file]
-# Builds files are in the env var $BUILD.
-# Source files are listed in the nev var $SRC.
-# Their indexes are correlated.
 compile_all() {
-	[ 0 -gt ${#BUILD[@]} ] && return 1
-	[ 0 -gt ${#SRC[@]} ] && return 1
-	[ ${#BUILD[@]} -eq ${#SRC[@]} ] || return 1
+	if [ $((${#BUILD[@]} % 2)) -ne 0 ]; then
+		echo "BUILD SCRIPT ERROR: Your BUILD variable doesn't have "
+		echo "                    an even number of entries. Every "
+		echo "                    source file should have an object "
+		echo "                    target following it."
+		exit 1
+	fi
 	
-	for i in `seq 0 $((${#BUILD[@]} - 1))`; do
-		${1} ${BUILD[$i]} ${SRC[$i]}
+	for i in `seq 0 2 $((${#BUILD[@]} - 1))`; do
+		# Source files are even indexes.
+		# Output files are the following odd index.
+		src=${BUILD[$i]}
+		obj=${BUILD[$((i + 1))]}
+		if is_changed ${obj} ${src}; then
+			echo "Compiling ${src} -> ${obj}"
+			eval ${1} ${obj} ${src}
+		fi
 	done
 }
 
 # compile [output file] [source file]
-compile_c() {
-	is_changed ${1} ${2} && ${CC} ${CFLAGS} -o ${1} -c ${2}
+compile_c_debug() {
+	clang -g -O0 -std=c99 -Isrc/common/ -Isrc/dicts/ -o ${1} -c ${2}
 }
 
 make_dicts() {
@@ -38,44 +60,38 @@ make_dicts() {
 	#./tools/wl2array.py resources/urbandictionary.wl urban > src/dicts/urban.c
 }
 
+# build [compile command]
 build() {
 	BUILD=(
-		build/trie.o
-		build/words.o
-		build/game.o
-		build/common6.o
-		build/main.o
+		src/common/trie.c build/trie.o
+		src/common/words.c build/words.o
+		src/common/game.c build/game.o
+		src/dicts/common6.c build/common6.o
+		src/termword/main.c build/main.o
 	)
-	SRC=(
-		src/common/trie.c
-		src/common/words.c
-		src/common/game.c
-		src/dicts/common6.c
-		src/termword/main.c
-	)
-	
-	compile_all compile_c
+
+	[ -e build ] || (mkdir build 2> /dev/null)
+	compile_all ${1}
 	${CC} -o build/termwords build/trie.o build/words.o build/game.o build/main.o build/common6.o
 }
 
 case $1 in
 	'debug')
-		CFLAGS=${DEBUG_CFLAGS}
-		[ -e build ] || (mkdir build 2> /dev/null)
-		build
+		build compile_c_debug
 		;;
 	'release')
-		[ -e build ] || (mkdir build 2> /dev/null)
-		build
 		;;
 	'dicts')
 		make_dicts
 		;;
 	'clean')
 		rm -rf build/
+		;;
+	'dist-clean')
+		rm -rf build/
 		rm -f src/dicts/*.c
 		;;
 	*)
-		echo "Usage: ${0} [release|debug|clean|dicts]"
+		echo "Usage: ${0} [release|debug|clean|dist-clean|dicts]"
 		;;
 esac
