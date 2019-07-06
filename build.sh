@@ -48,7 +48,7 @@ compile_all() {
 		obj=${BUILD[$((i + 1))]}
 		if is_changed ${obj} ${src}; then
 			echo "Compiling ${src} -> ${obj}"
-			eval ${1} ${obj} ${src}
+			eval ${1} ${obj} ${src} || exit 1
 		fi
 	done
 }
