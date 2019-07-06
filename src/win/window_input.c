@@ -4,9 +4,9 @@
 #include "common.h"
 #include "mm.h"
 
-#define MY_INDEX_INPUT   0
-#define MY_INDEX_LETTERS 1 * sizeof(LONG_PTR)
-#define MY_INDEX_FONT    2 * sizeof(LONG_PTR)
+#define INDEX_INPUT   0
+#define INDEX_LETTERS 1 * sizeof(LONG_PTR)
+#define INDEX_FONT    2 * sizeof(LONG_PTR)
 
 #define Y_OFFSET (1 - (RATIO_ACTION + RATIO_STATUS + RATIO_INPUT))
 
@@ -14,10 +14,8 @@
 internal HFONT MakeFont(HWND window, int width, int height)
 {
 	// TODO: Tweak the fonts, make them look good.
-	HFONT font = (HFONT) GetWindowLongPtr(window, MY_INDEX_FONT);
-
-	if (!font)
-		DeleteObject(font);
+	HFONT font = (HFONT) GetWindowLongPtr(window, INDEX_FONT);
+	DeleteObject(font);
 	
 	font = CreateFontA(
 					   height / 2, // int    cHeight,
@@ -36,7 +34,8 @@ internal HFONT MakeFont(HWND window, int width, int height)
 					   0  // LPCSTR pszFaceName
 					   );
 
-	SetWindowLongPtr(window, MY_INDEX_FONT, (LONG_PTR) font);
+	SetWindowLongPtr(window, INDEX_FONT, (LONG_PTR) font);
+
 	return font;
 }
 
@@ -45,8 +44,8 @@ static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LP
 	switch (msg) {
 	case WM_SIZE:
 		{
-			HWND input_text = (HWND) GetWindowLongPtr(window, MY_INDEX_INPUT);
-			HWND letters_text = (HWND) GetWindowLongPtr(window, MY_INDEX_LETTERS);
+			HWND input_text = (HWND) GetWindowLongPtr(window, INDEX_INPUT);
+			HWND letters_text = (HWND) GetWindowLongPtr(window, INDEX_LETTERS);
 						
 			HWND parent = GetParent(window);
 			WINDOWSIZE psize = GetWindowSize(parent);
@@ -69,14 +68,18 @@ static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LP
 						 0, wsize.height / 2, wsize.width, wsize.height / 2,
 						 (SWP_NOZORDER | SWP_SHOWWINDOW));
 
+			/*
 			HFONT font = MakeFont(window, wsize.width, wsize.height);
+			
+			// TODO: This is leaking memory. Find a fix or maybe report this to Microsoft.
 			SendMessage(input_text, WM_SETFONT, (WPARAM) font, TRUE);
 			SendMessage(letters_text, WM_SETFONT, (WPARAM) font, TRUE);
+			*/
 		} break;
 	case WM_PLAYERINPUT:
 		{
 			RECT rc;
-			HWND input_text = (HWND) GetWindowLongPtr(window, MY_INDEX_INPUT);
+			HWND input_text = (HWND) GetWindowLongPtr(window, INDEX_INPUT);
 			HBRUSH bg_brush = CreateSolidBrush(BGCOLOR); // TODO: Does this have to be freed?
 			HDC dc = GetDC(input_text);
 			char *str = (char *) lparam;
@@ -89,7 +92,7 @@ static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LP
 	case WM_GAMELETTERS:
 		{
 			RECT rc;
-			HWND letters_text = (HWND) GetWindowLongPtr(window, MY_INDEX_LETTERS);
+			HWND letters_text = (HWND) GetWindowLongPtr(window, INDEX_LETTERS);
 			HBRUSH bg_brush = CreateSolidBrush(BGCOLOR); // TODO: Does this have to be freed?
 			HDC dc = GetDC(letters_text);
 			char *str = (char *) lparam;
@@ -130,8 +133,8 @@ static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LP
 			SendMessage(input_text, WM_SETFONT, (WPARAM) font, TRUE);
 			SendMessage(letters_text, WM_SETFONT, (WPARAM) font, TRUE);
 			
-			SetWindowLongPtr(window, MY_INDEX_INPUT, (LONG_PTR) input_text);
-			SetWindowLongPtr(window, MY_INDEX_LETTERS, (LONG_PTR) letters_text);
+			SetWindowLongPtr(window, INDEX_INPUT, (LONG_PTR) input_text);
+			SetWindowLongPtr(window, INDEX_LETTERS, (LONG_PTR) letters_text);
 		} break;
 	}
 
