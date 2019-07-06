@@ -110,8 +110,8 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT msg, WPARAM wparam, LPARAM lpa
 	case WM_NEWGAME:
 		{
 			reset_game(game, WORD_SIZE);
-			PostMessage(input, WM_PLAYERINPUT, 0, (LPARAM) game->play_buffer);
-			PostMessage(input, WM_GAMELETTERS, 0, (LPARAM) game->letters);
+			SendMessage(input, WM_PLAYERINPUT, 0, (LPARAM) game->play_buffer);
+			SendMessage(input, WM_GAMELETTERS, 0, (LPARAM) game->letters);
 			SetFocus(window);
 		} break;
 	case WM_SHUFFLE:
