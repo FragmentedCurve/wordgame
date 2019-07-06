@@ -9,6 +9,14 @@
 ###     [ (test)
 ###     echo
 ###     stat
+###
+### THIS BUILD SYSTEM PROVIDES
+###
+###   CMD/FUNC     ARGS
+###   --------------------------------------------------------------------------
+###   where_am_i
+###   is_changed   [object file] [source file]
+###   compile_all  [compile command]
 
 where_am_i() {
 	[ -e "C:\\" ] && echo "WINDOWS"
@@ -46,11 +54,6 @@ compile_all() {
 }
 
 ################################################################################
-
-# compile [output file] [source file]
-compile_c_release() {
-	clang -O2 -std=c99 -Isrc/common/ -Isrc/dicts/ -o ${1} -c ${2}
-}
 
 # compile [output file] [source file]
 compile_c_debug() {
