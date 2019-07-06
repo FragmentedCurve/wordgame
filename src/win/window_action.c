@@ -3,23 +3,11 @@
 #include <common.h>
 #include "mm.h"
 
-#define ACTION_WIDTH 250
-#define ACTION_HEIGHT 100
-
-#define B_CMD_NEWGAME 1
-#define B_CMD_SHUFFLE 2
-#define B_CMD_QUIT    3
-
 struct ActionButtons {
 	HWND new_game;
 	HWND shuffle;
 	HWND quit;
 };
-
-global const char *B_TITLE_NEWGAME = "New Game";
-global const char *B_TITLE_SHUFFLE = "Shuffle";
-global const char *B_TITLE_QUIT    = "Quit";
-global struct ActionButtons buttons = {0};
 
 internal WINDOWSIZE GetButtonSize(HWND w)
 {
@@ -37,75 +25,81 @@ static LRESULT CALLBACK ActionWindowProc(HWND window, UINT msg, WPARAM wparam, L
 	switch (msg) {
 	case WM_COMMAND:
 		{
-			UINT cmd = LOWORD(wparam);
-
-			switch (cmd) {
-			case B_CMD_NEWGAME:
-				{
-					HWND parent = GetParent(window);
-					PostMessage(parent, WM_NEWGAME, 0, 0);
-				} break;
-			case B_CMD_SHUFFLE:
-				{
-					HWND parent = GetParent(window);
-					PostMessage(parent, WM_SHUFFLE, 0, 0);
-				} break;
-			case B_CMD_QUIT:
-				{
-					PostQuitMessage(0);
-				} break;
+			struct ActionButtons *buttons = (struct ActionButtons *) GetWindowLongPtr(window, 0);
+			HWND b = (HWND) lparam;
+			
+			if (b == buttons->new_game) {
+				HWND parent = GetParent(window);
+				PostMessage(parent, WM_NEWGAME, 0, 0);
+			} else if (b == buttons->shuffle) {
+				HWND parent = GetParent(window);
+				PostMessage(parent, WM_SHUFFLE, 0, 0);
+			} else {
+				PostQuitMessage(0);
 			}
 		} break;
 	case WM_SIZE:
 		{
-			WINDOWSIZE bsize = GetButtonSize(window);
-			WINDOWSIZE wsize = GetWindowSize(window);
+			HWND parent = GetParent(window);
+			WINDOWSIZE wsize = GetWindowSize(parent);
+			UINT y_offset = wsize.height * (1 - RATIO_ACTION);
+			wsize.height *= RATIO_ACTION;
 
+			MoveWindow(window, 0, y_offset, wsize.width, wsize.height, FALSE);
+
+			WINDOWSIZE bsize = GetButtonSize(window);
+			struct ActionButtons *buttons = (struct ActionButtons *) GetWindowLongPtr(window, 0);
+			
 			SetWindowPos(
-						 buttons.new_game,
+						 buttons->new_game,
 						 NULL,
 						 0, 0, bsize.width, bsize.height,
 						 (SWP_NOZORDER | SWP_SHOWWINDOW));
 			SetWindowPos(
-						 buttons.shuffle,
+						 buttons->shuffle,
 						 NULL,
 						 bsize.width, 0, bsize.width, bsize.height,
 						 (SWP_NOZORDER | SWP_SHOWWINDOW));
 			SetWindowPos(
-						 buttons.quit,
+						 buttons->quit,
 						 NULL,
 						 (2 * bsize.width), 0, (bsize.width + (wsize.width - 3 * bsize.width)), bsize.height,
 						 (SWP_NOZORDER | SWP_SHOWWINDOW));
+
 		} break;
 	case WM_CREATE:
 		{
 			WINDOWSIZE bsize = GetButtonSize(window);
 			WINDOWSIZE wsize = GetWindowSize(window);
 			CREATESTRUCT cs = *((CREATESTRUCT *) lparam);
+			// Warning: If for some reason in the future this window gets destroyed
+			// and recreated throughout the run-life of the application, this will leak memory.
+			struct ActionButtons *buttons = calloc(1, sizeof(struct ActionButtons));
 			
-			buttons.new_game = CreateWindow("BUTTON", "New Game",
-											(BS_DEFPUSHBUTTON | BS_FLAT | WS_VISIBLE | WS_CHILD),
-											0, 0, bsize.width,  bsize.height,
-											window,
-											(HMENU) B_CMD_NEWGAME,
-											cs.hInstance,
-											0);
+			buttons->new_game = CreateWindow("BUTTON", "New Game",
+											 (BS_DEFPUSHBUTTON | BS_FLAT | WS_VISIBLE | WS_CHILD),
+											 0, 0, bsize.width,  bsize.height,
+											 window,
+											 0,
+											 cs.hInstance,
+											 0);
 
-			buttons.shuffle = CreateWindow("BUTTON", "Shuffle",
+			buttons->shuffle = CreateWindow("BUTTON", "Shuffle",
 										   (BS_DEFPUSHBUTTON | BS_FLAT | WS_VISIBLE | WS_CHILD),
 										   bsize.width, 0, bsize.width,  bsize.height,
 										   window,
-										   (HMENU) B_CMD_SHUFFLE,
+										   0,
 										   cs.hInstance,
 										   0);
 
-			buttons.quit = CreateWindow("BUTTON", "Quit",
-										(BS_DEFPUSHBUTTON | BS_FLAT | WS_VISIBLE | WS_CHILD),
-										(2 * bsize.width), 0, bsize.width + (wsize.width - 3 * bsize.width),  bsize.height,
-										window,
-										(HMENU) B_CMD_QUIT,
-										cs.hInstance,
-										0);
+			buttons->quit = CreateWindow("BUTTON", "Quit",
+										 (BS_DEFPUSHBUTTON | BS_FLAT | WS_VISIBLE | WS_CHILD),
+										 (2 * bsize.width), 0, bsize.width + (wsize.width - 3 * bsize.width),  bsize.height,
+										 window,
+										 0,
+										 cs.hInstance,
+										 0);
+			SetWindowLongPtr(window, 0, (LONG_PTR) buttons);
 		} break;
 	}
 
@@ -124,6 +118,7 @@ BOOL ActionMakeWindow(HWND *hwnd, HWND parent, HINSTANCE instance)
 	wc.hInstance = instance;
 	wc.hbrBackground = bg_brush;
 	wc.lpszClassName = CLASS_NAME_ACTION;
+	wc.cbWndExtra = sizeof(LONG_PTR);
 
 	if (!RegisterClass(&wc)) {
 		return FALSE;
@@ -136,8 +131,8 @@ BOOL ActionMakeWindow(HWND *hwnd, HWND parent, HINSTANCE instance)
 	*hwnd = CreateWindow(
 						CLASS_NAME_ACTION,
 						TITLE_ACTION,
-						(WS_SIZEBOX | WS_CAPTION | WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS),
-						CW_USEDEFAULT, CW_USEDEFAULT, ACTION_WIDTH, ACTION_HEIGHT,
+						(WS_CHILD | WS_VISIBLE),
+						0, (size.height - height), width, height,
 						parent, 0,
 						instance,
 						0);

@@ -6,7 +6,7 @@
 #include "mm.h"
 #include "dict.h"
 
-#define MAIN_WIDTH  1000
+#define MAIN_WIDTH  300
 #define MAIN_HEIGHT 600
 
 const char *CLASS_NAME_MAIN      = "Main";
@@ -21,12 +21,6 @@ const char *TITLE_STATUS    = "Status";
 const char *TITLE_INPUT     = "Input";
 const char *TITLE_PLAYBOARD = "Playboard";
 
-/* TODO: Find a way of preventing these from being global. */
-global HWND main;
-global HWND action;
-global HWND input;
-
-global Game game = {0};
 
 WINDOWSIZE GetWindowSize(HWND window)
 {
@@ -38,7 +32,7 @@ WINDOWSIZE GetWindowSize(HWND window)
 	return size;
 }
 
-void player_input(Game game, char c)
+internal void player_input(Game game, HWND input, char c)
 {
 	GameError result = NONE;
 	
@@ -47,7 +41,7 @@ void player_input(Game game, char c)
 	} else if (c == VK_BACK) {
 		result = delete_char(game);
 	} else if (c == VK_RETURN) {
-		result = check(game);
+		result = play(game);
 	}
 
 	// TODO: Handle errors correctly
@@ -56,36 +50,62 @@ void player_input(Game game, char c)
 		{
 			PostMessage(input, WM_PLAYERINPUT, 0, (LPARAM) game.play_buffer);
 		} break;
-	case INPUT_FULL:
+	case INPUT_BUF_FULL:
 		{
-			DEBUG("Input Full!");
+			DEBUG("Too many letters!");
+		} break;
+	case INPUT_BUF_EMPTY:
+		{
+			DEBUG("No letters to delete.");
+		} break;
+	case WORD_PLAYED:
+		{
+			DEBUG("You already played that word!");
+		} break;
+	case WRONG_LETTER:
+		{
+			//DEBUG("That's not one of the given random letters!");
+		} break;
+	case INCORRECT_WORD:
+		{
+			DEBUG("That's not even a word!");
 		} break;
 	default:
 		{
-			DEBUG("Something else");
+			DEBUG("I don't know what happened. Maybe you do.");
 		} break;
 	}
 }
 
 LRESULT CALLBACK MainWindowProc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam)
 {
-	switch (msg) {
-	case WM_KEYUP:
+	Game *game = (Game *) GetWindowLongPtr(window, INDEX_GAME);
+	HWND input = (HWND) GetWindowLongPtr(window, INDEX_WINPUT);
+	HWND action = (HWND) GetWindowLongPtr(window, INDEX_WACTION);
 
+	switch (msg) {
+	case WM_SIZE:
+		{
+			SendMessage(action, msg, wparam, lparam);
+			SendMessage(input, msg, wparam, lparam);
+		} break;
+	case WM_KEYUP:
 		{
 			char c = wparam;
-			player_input(game, c);
+			player_input(*game, input, c);
 		} break;
 	case WM_NEWGAME:
 		{
-			reset_game(&game, WORD_SIZE);
-			PostMessage(input, WM_PLAYERINPUT, 0, (LPARAM) game.play_buffer);
-			PostMessage(input, WM_GAMELETTERS, 0, (LPARAM) game.letters);
+			reset_game(game, WORD_SIZE);
+			PostMessage(input, WM_PLAYERINPUT, 0, (LPARAM) game->play_buffer);
+			PostMessage(input, WM_GAMELETTERS, 0, (LPARAM) game->letters);
+			SetFocus(window);
 		} break;
 	case WM_SHUFFLE:
 		{
-			shuffle(game);
-			PostMessage(input, WM_GAMELETTERS, 0, (LPARAM) game.letters);
+			shuffle(*game);
+			PostMessage(input, WM_GAMELETTERS, 0, (LPARAM) game->letters);
+			SetFocus(window);
 			break;
 		} break;
 	case WM_DESTROY:
@@ -107,6 +127,7 @@ BOOL MainMakeWindow(HWND *hwnd, UINT width, UINT height, HINSTANCE instance)
 	wc.hInstance = instance;
 	wc.hbrBackground = bg_brush;
 	wc.lpszClassName = CLASS_NAME_MAIN;
+	wc.cbWndExtra = sizeof(LONG_PTR) * 4;
 	
 	if (!RegisterClass(&wc))
 		return FALSE;
@@ -130,6 +151,10 @@ BOOL MainMakeWindow(HWND *hwnd, UINT width, UINT height, HINSTANCE instance)
 int WINAPI WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int cmd_show)
 {
 	BOOL result;
+	Game game;
+	HWND main;
+	HWND action;
+	HWND input;
 	
 	result = MainMakeWindow(&main, MAIN_WIDTH, MAIN_HEIGHT, instance);
 	if (!result)
@@ -145,7 +170,10 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, 
 
 	ShowWindow(main, cmd_show);
 	game = new_game(wl_common6, wl_common6_len, WORD_SIZE, WORD_SIZE);
-
+	SetWindowLongPtr(main, INDEX_GAME, (LONG_PTR) &game);
+	SetWindowLongPtr(main, INDEX_WINPUT, (LONG_PTR) input);
+	SetWindowLongPtr(main, INDEX_WACTION, (LONG_PTR) action);
+	
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0)) {
 		TranslateMessage(&msg);

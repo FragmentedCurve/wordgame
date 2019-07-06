@@ -4,20 +4,29 @@
 #include "common.h"
 #include "mm.h"
 
-#define INPUT_WIDTH 200
-#define INPUT_HEIGHT 100
+#define MY_INDEX_INPUT   0
+#define MY_INDEX_LETTERS 1 * sizeof(LONG_PTR)
 
-global const char *S_TITLE_INPUTTEXT = "InputText";
-
-global HWND input_text;
-global HWND letters_text;
+#define Y_OFFSET (1 - (RATIO_ACTION + RATIO_STATUS + RATIO_INPUT))
 
 static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	switch (msg) {
 	case WM_SIZE:
 		{
+			HWND input_text = (HWND) GetWindowLongPtr(window, MY_INDEX_INPUT);
+			HWND letters_text = (HWND) GetWindowLongPtr(window, MY_INDEX_LETTERS);
+						
+			HWND parent = GetParent(window);
+			WINDOWSIZE psize = GetWindowSize(parent);
 			WINDOWSIZE wsize = GetWindowSize(window);
+			UINT y = psize.height * Y_OFFSET;
+
+			wsize.width = psize.width;
+			wsize.height = psize.height * RATIO_INPUT;
+			
+			MoveWindow(window, 0, y, wsize.width, wsize.height, FALSE);
+
 			SetWindowPos(
 						 input_text,
 						 NULL,
@@ -28,11 +37,12 @@ static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LP
 						 NULL,
 						 0, wsize.height / 2, wsize.width, wsize.height / 2,
 						 (SWP_NOZORDER | SWP_SHOWWINDOW));
-						
+			
 		} break;
 	case WM_PLAYERINPUT:
 		{
 			RECT rc;
+			HWND input_text = (HWND) GetWindowLongPtr(window, MY_INDEX_INPUT);
 			HBRUSH bg_brush = CreateSolidBrush(BGCOLOR); // TODO: Does this have to be freed?
 			HDC dc = GetDC(input_text);
 			char *str = (char *) lparam;
@@ -45,6 +55,7 @@ static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LP
 	case WM_GAMELETTERS:
 		{
 			RECT rc;
+			HWND letters_text = (HWND) GetWindowLongPtr(window, MY_INDEX_LETTERS);
 			HBRUSH bg_brush = CreateSolidBrush(BGCOLOR); // TODO: Does this have to be freed?
 			HDC dc = GetDC(letters_text);
 			char *str = (char *) lparam;
@@ -56,13 +67,16 @@ static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LP
 		} break;
 	case WM_CREATE:
 		{
+			HWND input_text;
+			HWND letters_text;
+
 			WINDOWSIZE wsize = GetWindowSize(window);
 			CREATESTRUCT cs = *((CREATESTRUCT *) lparam);
 			
 			input_text = CreateWindow(
 									  "STATIC",
 									  "",
-									  WS_VISIBLE | WS_CHILD | SS_SUNKEN | SS_SIMPLE,
+									  (WS_VISIBLE | WS_CHILD | SS_CENTER | SS_SUNKEN | SS_ENDELLIPSIS | SS_CENTERIMAGE),
 									  0, 0, wsize.width, wsize.height / 2,
 									  window,
 									  0,
@@ -71,13 +85,14 @@ static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LP
 			letters_text = CreateWindow(
 									  "STATIC",
 									  "",
-									  (WS_VISIBLE | WS_CHILD | SS_CENTER | SS_SUNKEN | SS_ENDELLIPSIS),
+									  (WS_VISIBLE | WS_CHILD | SS_CENTER | SS_SUNKEN | SS_ENDELLIPSIS | SS_CENTERIMAGE),
 									  0, wsize.height / 2, wsize.width, wsize.height / 2,
 									  window,
 									  0,
 									  cs.hInstance,
 									  0);
-
+			SetWindowLongPtr(window, MY_INDEX_INPUT, (LONG_PTR) input_text);
+			SetWindowLongPtr(window, MY_INDEX_LETTERS, (LONG_PTR) letters_text);
 		} break;
 	}
 
@@ -87,7 +102,7 @@ static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LP
 BOOL InputMakeWindow(HWND *hwnd, HWND parent, HINSTANCE instance)
 {
 	UINT height;
-	UINT y_stack;
+	UINT y_offset;
 	WINDOWSIZE size;
 	WNDCLASS wc = {0};
 	HBRUSH bg_brush = CreateSolidBrush(BGCOLOR);
@@ -97,20 +112,22 @@ BOOL InputMakeWindow(HWND *hwnd, HWND parent, HINSTANCE instance)
 	wc.hInstance = instance;
 	wc.hbrBackground = bg_brush;
 	wc.lpszClassName = CLASS_NAME_INPUT;
-
+	wc.cbWndExtra = sizeof(LONG_PTR) * 2;
+	
 	if (!RegisterClass(&wc)) {
 		return FALSE;
 	}
 
+	// TODO: Clean this up!
 	size = GetWindowSize(parent);
-	y_stack = size.height * (RATIO_ACTION + RATIO_STATUS + RATIO_INPUT);
+	y_offset = size.height * (RATIO_ACTION + RATIO_STATUS + RATIO_INPUT);
 	height = size.height * RATIO_INPUT;
 
 	*hwnd = CreateWindow(
 						 CLASS_NAME_INPUT,
 						 TITLE_INPUT,
-						 (WS_SIZEBOX | WS_CAPTION | WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS),
-						 CW_USEDEFAULT, CW_USEDEFAULT, INPUT_WIDTH, INPUT_HEIGHT,
+						 (WS_CHILD | WS_VISIBLE),
+						 0, (size.height - y_offset), size.width, height,
 						 parent, 0,
 						 instance,
 						 0);
