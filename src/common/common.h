@@ -19,14 +19,24 @@ struct TrieNode {
 	int is_word;
 };
 
-/* TODO: Define better status indicators for the game and error states. */
+/* TODO: Make sure all these error states are being used somewhere. */
 typedef enum GameError GameError;
 enum GameError {
 				NONE = 0,
+
+				// Letter
 				NOT_ALPHA,
 				WRONG_LETTER,
+				
+				// Word
 				WORD_PLAYED,
-				INPUT_FULL,
+				INCORRECT_WORD,
+				INPUT_BUF_FULL,
+				INPUT_BUF_EMPTY,
+				
+				// Game
+				GAME_LOST,
+				GAME_WON,
 };
 
 typedef struct Game Game;
@@ -46,16 +56,18 @@ void insert_word(TrieNode *trie, const char *word);
 bool word_exists(TrieNode *trie, const char *word);
 
 /* game.c */
-GameError check(Game game);
-GameError check_word(Game game, const char *word);
-unsigned int *played_word_count(Game game);
-unsigned int *possible_word_count(Game game);
 Game new_game(const char* const word_list[], unsigned int wl_len, unsigned int word_size, int repeat_max);
 void destroy_game(Game game);
 void reset_game(Game *game, unsigned int word_size);
 void shuffle(Game game);
+GameError check(Game game);
+GameError check_word(Game game, const char *word);
+GameError play(Game game);
+GameError play_word(Game game, char *word);
 GameError input_char(Game game, char c);
 GameError delete_char(Game game);
+unsigned int *played_word_count(Game game);
+unsigned int *possible_word_count(Game game);
 
 /* words.c */
 bool is_word_alpha(const char *word);

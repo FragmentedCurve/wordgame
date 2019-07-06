@@ -6,6 +6,9 @@
 #include <assert.h>
 #include <common.h>
 
+/*
+  Not supported in strict C99. Thus implemented here.
+*/
 internal char *strdup(const char *str)
 {
 	int n = strlen(str);
@@ -63,6 +66,33 @@ void destroy_game(Game game)
 	free(game.play_buffer);
 }
 
+GameError play(Game game)
+{
+	return play_word(game, game.play_buffer);
+}
+
+/*
+  Checks if word is valid and adds it to the played words trie (game.played_words).
+  Its similar to check_word() except play_word() changes the game state by adding
+  the word into the trie.
+*/
+GameError play_word(Game game, char *word)
+{
+	GameError result = check_word(game, word);
+	
+	if (result == NONE) {
+		insert_word(game.played_words, word);
+		memset(game.play_buffer, 0, game.word_size);
+	}
+	
+	return result;
+}
+
+/*
+  Resetting the game implies NOT changing the word list used to make 
+  the game. The only things reset are the word size, the player's buffer,
+  and the playable random letters.
+*/
 void reset_game(Game *game, unsigned int word_size)
 {
 	free_trienode(game->played_words);
@@ -73,6 +103,9 @@ void reset_game(Game *game, unsigned int word_size)
 	memset(game->play_buffer, 0, game->word_size);
 }
 
+/*
+  Shuffle the player's given random letters (game.letters).
+*/
 void shuffle(Game game)
 {
 	int len = strlen(game.letters);
@@ -87,33 +120,53 @@ void shuffle(Game game)
 	}
 }
 
+/*
+  Appends a char to the player's buffer (game.play_buffer).
+*/
 GameError input_char(Game game, char c)
 {
 	int n = strlen(game.play_buffer);
 	
 	if (n == game.word_size)
-		return INPUT_FULL;
+		return INPUT_BUF_FULL;
 
 	game.play_buffer[n] = c;
+
+	// Make sure the char is a given random letter.
+	if (!is_similar(game.play_buffer, game.letters)) {
+		game.play_buffer[n] = '\0';
+		return WRONG_LETTER;
+	}
+
 	return NONE;
 }
+
+/*
+  Removes the last char in game.play_buffer.
+*/
 GameError delete_char(Game game)
 {
 	int n = strlen(game.play_buffer);
 
 	// TODO: Pick a proper return value.
 	if (n == 0)
-		return INPUT_FULL;
+		return INPUT_BUF_EMPTY;
 
 	game.play_buffer[n - 1] = '\0';
 	return NONE;
 }
 
+/*
+  Wrapper for check_word. Checks the word in game.play_buffer.
+*/
 GameError check(Game game)
 {
 	return check_word(game, game.play_buffer);
 }
 
+/*
+  Check whether the word is playable.
+*/
 GameError check_word(Game game, const char *word)
 {
 	if (!is_word_alpha(word))
@@ -122,6 +175,8 @@ GameError check_word(Game game, const char *word)
 		return WRONG_LETTER;
 	if (word_exists(game.played_words, word))
 		return WORD_PLAYED;
+	if (!word_exists(game.words, word))
+		return INCORRECT_WORD;
 
 	return NONE;
 }
@@ -151,6 +206,10 @@ internal void possible_word_counter(TrieNode *root, const char *letters, unsigne
 	}
 }
 
+/*
+  Same as possible_word_count() except the returned array is the word count of
+  words played by the player, NOT the possible words that the player can play.
+*/
 unsigned int *played_word_count(Game game)
 {
 	unsigned int *counts = calloc(game.word_size, sizeof(unsigned int));
@@ -159,6 +218,12 @@ unsigned int *played_word_count(Game game)
 	return counts;
 }
 
+/*
+  This function goes through the trie structure and counts how many possible words
+  can be made given the random letters from game.letters.
+
+  Returns an integer array of the words whose char length is the array's index.
+*/ 
 unsigned int *possible_word_count(Game game)
 {
 	unsigned int *counts = calloc(game.word_size, sizeof(unsigned int));
