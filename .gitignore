@@ -2,5 +2,5 @@
 *#
 *.o
 build/*
-src/dicts/*.c
+#src/dicts/*.c
 
