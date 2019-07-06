@@ -13,15 +13,13 @@
 #define global static    // global variables
 #define persist static   // local persistent static variables
 
-typedef struct TrieNode TrieNode;
-struct TrieNode {
-	TrieNode *children[ALPHABET_SIZE];
+typedef struct TrieNode {
+	struct TrieNode *children[ALPHABET_SIZE];
 	int is_word;
-};
+} TrieNode;
 
 /* TODO: Make sure all these error states are being used somewhere. */
-typedef enum GameError GameError;
-enum GameError {
+typedef enum GameError {
 				NONE = 0,
 
 				// Letter
@@ -37,17 +35,16 @@ enum GameError {
 				// Game
 				GAME_LOST,
 				GAME_WON,
-};
+} GameError;
 
-typedef struct Game Game;
-struct Game {
+typedef struct Game {
 	TrieNode *words;         // Dictionary words
 	TrieNode *played_words;  // Words successfully played
 	char *letters;           // Random letters for player
 	unsigned int word_size;  // Max size a word can be
 	int repeat_max;          // Max times a letter can repeat
 	char *play_buffer;       // Used for storing player input
-};
+} Game;
 
 /* trie.c */
 TrieNode *new_trienode();
