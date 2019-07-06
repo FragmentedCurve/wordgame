@@ -1,17 +1,14 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
+################################################################################
 ### REQUIREMENTS TO USE THIS BUILD SYSTEM
 ###
-### Shells: Bash
+### Shells: bash
 ### Commands:
 ###     seq
 ###     [ (test)
 ###     echo
 ###     stat
-
-CC=clang  # if you change this, you might have to change every command
-DEBUG_CFLAGS='-g -O0 -std=c99 -Isrc/common/ -Isrc/dicts/'
-CFLAGS='-O2 -std=c99 -Isrc/common/ -Isrc/dicts/'
 
 where_am_i() {
 	[ -e "C:\\" ] && echo "WINDOWS"
@@ -48,6 +45,13 @@ compile_all() {
 	done
 }
 
+################################################################################
+
+# compile [output file] [source file]
+compile_c_release() {
+	clang -O2 -std=c99 -Isrc/common/ -Isrc/dicts/ -o ${1} -c ${2}
+}
+
 # compile [output file] [source file]
 compile_c_debug() {
 	clang -g -O0 -std=c99 -Isrc/common/ -Isrc/dicts/ -o ${1} -c ${2}
@@ -62,7 +66,7 @@ make_dicts() {
 
 # build [compile command]
 build() {
-	BUILD=(
+	LINUX_BUILD=(
 		src/common/trie.c build/trie.o
 		src/common/words.c build/words.o
 		src/common/game.c build/game.o
@@ -70,9 +74,32 @@ build() {
 		src/termword/main.c build/main.o
 	)
 
+	WIN_BUILD=(
+		src/common/trie.c build/trie.o
+		src/common/words.c build/words.o
+		src/common/game.c build/game.o
+		src/dicts/common6.c build/common6.o
+		src/win/mm.c build/mm.o
+		src/win/window_action.c build/window_action.o
+		src/win/window_input.c build/window_input.o
+	)
+
+	cc=${1}
+
+	case `where_am_i` in
+		'LINUX')
+			BUILD=(${LINUX_BUILD[@]})
+			link='clang -o build/termwords build/trie.o build/words.o build/game.o build/main.o build/common6.o'
+			;;
+		'WINDOWS')
+			BUILD=(${WIN_BUILD[@]})
+			link='clang -o build/termwords -l user32.lib -l gdi32.lib build/trie.o build/words.o build/game.o build/main.o build/common6.o'
+			;;
+	esac
+	
 	[ -e build ] || (mkdir build 2> /dev/null)
-	compile_all ${1}
-	${CC} -o build/termwords build/trie.o build/words.o build/game.o build/main.o build/common6.o
+	compile_all ${cc}
+	eval ${link}
 }
 
 case $1 in
