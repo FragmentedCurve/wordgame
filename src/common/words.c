@@ -43,13 +43,13 @@ bool is_similar(const char *word1, const char *word2)
 	char l2[ALPHABET_SIZE] = {0};
 
 	while (*word1) {
-		char index = toupper(*word1) - 'A';
+		int index = toupper(*word1) - 'A';
 		l1[index]++;
 		word1++;
 	}
 
 	while (*word2) {
-		char index = toupper(*word2) - 'A';
+		int index = toupper(*word2) - 'A';
 		l2[index]++;
 		word2++;
 	}

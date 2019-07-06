@@ -57,7 +57,7 @@ compile_all() {
 
 # compile [output file] [source file]
 compile_c_debug() {
-	clang -g -O0 -std=c99 -Isrc/common/ -Isrc/dicts/ -o ${1} -c ${2}
+	clang -Wall -Werror -g -O0 -std=c99 -Isrc/common/ -Isrc/dicts/ -o ${1} -c ${2}
 }
 
 make_dicts() {

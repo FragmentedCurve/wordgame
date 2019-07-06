@@ -6,21 +6,6 @@
 #include <assert.h>
 #include <common.h>
 
-/*
-  Not supported in strict C99. Thus implemented here.
-*/
-internal char *strdup(const char *str)
-{
-	int n = strlen(str);
-	char *s = calloc(n + 1, sizeof(char));
-	assert(s);
-	
-	for (int i = 0; i < n; i++)
-		s[i] = str[i];
-	
-	return s;
-}
-
 internal char *remove_letter(const char *s, int index)
 {
 	int len = strlen(s);
@@ -39,7 +24,6 @@ internal char *remove_letter(const char *s, int index)
 
 Game new_game(const char* const word_list[], unsigned int wl_len, unsigned int word_size, int repeat_max)
 {
-	TrieNode *words;
 	Game game = {0};
 
 	game.word_size = word_size;
