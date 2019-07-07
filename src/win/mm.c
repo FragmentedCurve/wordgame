@@ -10,9 +10,10 @@
 #define MAIN_HEIGHT 600
 
 /* WNDCLASS LONG_PTR Indexes */
-#define INDEX_GAME    0
-#define INDEX_WINPUT  1 * sizeof(LONG_PTR)
-#define INDEX_WACTION 2 * sizeof(LONG_PTR)
+#define INDEX_GAME       0
+#define INDEX_WINPUT     1 * sizeof(LONG_PTR)
+#define INDEX_WACTION    2 * sizeof(LONG_PTR)
+#define INDEX_WPLAYBOARD 3 * sizeof(LONG_PTR)
 
 const char *CLASS_NAME_MAIN      = "Main";
 const char *CLASS_NAME_ACTION    = "Action";
@@ -85,7 +86,8 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT msg, WPARAM wparam, LPARAM lpa
 	Game *game = (Game *) GetWindowLongPtr(window, INDEX_GAME);
 	HWND input = (HWND) GetWindowLongPtr(window, INDEX_WINPUT);
 	HWND action = (HWND) GetWindowLongPtr(window, INDEX_WACTION);
-
+	HWND playboard = (HWND) GetWindowLongPtr(window, INDEX_WPLAYBOARD);
+	
 	switch (msg) {
 	case WM_CREATE:
 		{
@@ -93,14 +95,17 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT msg, WPARAM wparam, LPARAM lpa
 			
 			ActionMakeWindow(&action, window, cs.hInstance);
 			InputMakeWindow(&input, window, cs.hInstance);
-
+			PlayboardMakeWindow(&playboard, window, cs.hInstance);
+			
 			SetWindowLongPtr(window, INDEX_WINPUT, (LONG_PTR) input);
 			SetWindowLongPtr(window, INDEX_WACTION, (LONG_PTR) action);
+			SetWindowLongPtr(window, INDEX_WPLAYBOARD, (LONG_PTR) playboard);
 		} break;
 	case WM_SIZE:
 		{
 			SendMessage(action, msg, wparam, lparam);
 			SendMessage(input, msg, wparam, lparam);
+			SendMessage(playboard, msg, wparam, lparam);
 		} break;
 	case WM_KEYDOWN:
 		{

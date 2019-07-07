@@ -41,3 +41,6 @@ BOOL ActionMakeWindow(HWND *hwnd, HWND parent, HINSTANCE instance);
 
 /* window_input.c */
 BOOL InputMakeWindow(HWND *hwnd, HWND parent, HINSTANCE instance);
+
+/* window_playboard.c */
+BOOL PlayboardMakeWindow(HWND *playboard, HWND parent, HINSTANCE instance);

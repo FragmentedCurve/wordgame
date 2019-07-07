@@ -68,13 +68,11 @@ static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LP
 						 0, wsize.height / 2, wsize.width, wsize.height / 2,
 						 (SWP_NOZORDER | SWP_SHOWWINDOW));
 
-			/*
 			HFONT font = MakeFont(window, wsize.width, wsize.height);
 			
 			// TODO: This is leaking memory. Find a fix or maybe report this to Microsoft.
 			SendMessage(input_text, WM_SETFONT, (WPARAM) font, TRUE);
 			SendMessage(letters_text, WM_SETFONT, (WPARAM) font, TRUE);
-			*/
 		} break;
 	case WM_PLAYERINPUT:
 		{
