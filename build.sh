@@ -17,6 +17,7 @@
 ###   where_am_i
 ###   is_changed   [object file] [source file]
 ###   compile_all  [compile command]
+###   set_build    [array variable name]
 
 where_am_i() {
 	[ -e "C:\\" ] && echo "WINDOWS"
@@ -53,6 +54,11 @@ compile_all() {
 	done
 }
 
+# set_build [array variable name]
+set_build() {
+	eval "BUILD=(\${${1}[@]})"
+}
+
 ################################################################################
 
 # compile [output file] [source file]
@@ -70,32 +76,32 @@ make_dicts() {
 # build [compile command]
 build() {
 	LINUX_BUILD=(
-		src/common/trie.c build/trie.o
-		src/common/words.c build/words.o
-		src/common/game.c build/game.o
+		src/common/trie.c   build/trie.o
+		src/common/words.c  build/words.o
+		src/common/game.c   build/game.o
 		src/dicts/common6.c build/common6.o
 		src/termword/main.c build/main.o
 	)
 
 	WIN_BUILD=(
-		src/common/trie.c build/trie.o
-		src/common/words.c build/words.o
-		src/common/game.c build/game.o
-		src/dicts/common6.c build/common6.o
-		src/win/mm.c build/mm.o
+		src/common/trie.c       build/trie.o
+		src/common/words.c      build/words.o
+		src/common/game.c       build/game.o
+		src/dicts/common6.c     build/common6.o
+		src/win/mm.c            build/mm.o
 		src/win/window_action.c build/window_action.o
-		src/win/window_input.c build/window_input.o
+		src/win/window_input.c  build/window_input.o
 	)
 
 	cc=${1}
 
 	case `where_am_i` in
 		'LINUX')
-			BUILD=(${LINUX_BUILD[@]})
+			set_build LINUX_BUILD
 			link='clang -o build/termwords build/trie.o build/words.o build/game.o build/main.o build/common6.o'
 			;;
 		'WINDOWS')
-			BUILD=(${WIN_BUILD[@]})
+			set_build WIN_BUILD
 			link='clang -o build/mm.exe -l user32.lib -l gdi32.lib build/trie.o build/words.o build/game.o build/common6.o build/mm.o build/window_action.o build/window_input.o'
 			;;
 	esac
