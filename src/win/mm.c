@@ -141,7 +141,8 @@ BOOL MainMakeWindow(HWND *hwnd, UINT width, UINT height, HINSTANCE instance)
 	wc.hbrBackground = bg_brush;
 	wc.lpszClassName = CLASS_NAME_MAIN;
 	wc.cbWndExtra = sizeof(LONG_PTR) * 4;
-	
+	wc.hCursor = LoadCursor(NULL, (LPCTSTR)IDC_ARROW);
+
 	if (!RegisterClass(&wc))
 		return FALSE;
 
