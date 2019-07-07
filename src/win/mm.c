@@ -165,21 +165,21 @@ BOOL MainMakeWindow(HWND *hwnd, UINT width, UINT height, HINSTANCE instance)
 int WINAPI WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int cmd_show)
 {
 	BOOL result;
-	HWND main;
+	HWND main_win;
 	HWND input;
 	Game game = {0};
 
-	result = MainMakeWindow(&main, MAIN_WIDTH, MAIN_HEIGHT, instance);
+	result = MainMakeWindow(&main_win, MAIN_WIDTH, MAIN_HEIGHT, instance);
 	if (!result)
 		return 0;
 
-	ShowWindow(main, cmd_show);
+	ShowWindow(main_win, cmd_show);
 
 	// Doing this in WM_CREATE throws an "Exception 0xc0000005".
 	// Don't know why. Possibly due to recusion
 	game = new_game(wl_common6, wl_common6_len, WORD_SIZE, WORD_SIZE);
-	SetWindowLongPtr(main, INDEX_GAME, (LONG_PTR) &game);
-	input = (HWND) GetWindowLongPtr(main, INDEX_WINPUT);
+	SetWindowLongPtr(main_win, INDEX_GAME, (LONG_PTR) &game);
+	input = (HWND) GetWindowLongPtr(main_win, INDEX_WINPUT);
 	SendMessage(input, WM_GAMELETTERS, 0, (LPARAM) game.letters);
 
 	MSG msg;
