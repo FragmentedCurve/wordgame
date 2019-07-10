@@ -41,7 +41,7 @@ internal void update_playboard(Game game, HWND playboard)
 {
 	unsigned int *counts = possible_word_count(game);
 	unsigned int *pcounts = played_word_count(game);
-	PostMessage(playboard, WM_UPDATE_BOARD, (WPARAM) pcounts, (LPARAM) counts);
+	SendMessage(playboard, WM_UPDATE_BOARD, (WPARAM) pcounts, (LPARAM) counts);
 	free(counts);
 	free(pcounts);
 }
