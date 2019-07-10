@@ -66,7 +66,7 @@ GameError play_word(Game game, char *word)
 	
 	if (result == NONE) {
 		insert_word(game.played_words, word);
-		memset(game.play_buffer, 0, game.word_size);
+		clear_buffer(game);
 	}
 	
 	return result;
@@ -84,7 +84,7 @@ void reset_game(Game *game, unsigned int word_size)
 	game->word_size = word_size;
 	game->played_words = new_trienode();
 	game->letters = rand_letters(game->word_size, game->repeat_max);
-	memset(game->play_buffer, 0, game->word_size);
+	clear_buffer(*game);
 }
 
 /*
