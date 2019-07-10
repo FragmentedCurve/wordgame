@@ -140,6 +140,11 @@ GameError delete_char(Game game)
 	return NONE;
 }
 
+void clear_buffer(Game game)
+{
+	memset(game.play_buffer, 0, game.word_size);
+}
+
 /*
   Wrapper for check_word. Checks the word in game.play_buffer.
 */

@@ -65,6 +65,7 @@ GameError input_char(Game game, char c);
 GameError delete_char(Game game);
 unsigned int *played_word_count(Game game);
 unsigned int *possible_word_count(Game game);
+void clear_buffer(Game game);
 
 /* words.c */
 bool is_word_alpha(const char *word);
