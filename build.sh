@@ -66,6 +66,11 @@ compile_c_debug() {
 	clang -Wall -Werror -g -O0 -std=c99 -Isrc/common/ -Isrc/dicts/ -o ${1} -c ${2}
 }
 
+# compile [output file] [source file]
+compile_c_release() {
+	clang -Wall -Werror -O2 -std=c99 -Isrc/common/ -Isrc/dicts/ -o ${1} -c ${2}
+}
+
 make_dicts() {
 	./tools/wl2array.py resources/en-common.wl common6 6 > src/dicts/common6.c
 	#./tools/wl2array.py resources/en-common.wl common > src/dicts/common.c
@@ -117,6 +122,7 @@ case $1 in
 		build compile_c_debug
 		;;
 	'release')
+		build  compile_c_release
 		;;
 	'dicts')
 		make_dicts
