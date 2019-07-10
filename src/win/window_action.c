@@ -6,7 +6,6 @@
 struct ActionButtons {
 	HWND new_game;
 	HWND shuffle;
-	HWND quit;
 };
 
 internal WINDOWSIZE GetButtonSize(HWND w)
@@ -14,7 +13,7 @@ internal WINDOWSIZE GetButtonSize(HWND w)
 	WINDOWSIZE bsize = {0};
 	WINDOWSIZE wsize = GetWindowSize(w);
 
-	bsize.width = wsize.width / 3;
+	bsize.width = wsize.width / 2;
 	bsize.height = wsize.height;
 	
 	return bsize;
@@ -60,17 +59,10 @@ static LRESULT CALLBACK ActionWindowProc(HWND window, UINT msg, WPARAM wparam, L
 						 NULL,
 						 bsize.width, 0, bsize.width, bsize.height,
 						 (SWP_NOZORDER | SWP_SHOWWINDOW));
-			SetWindowPos(
-						 buttons->quit,
-						 NULL,
-						 (2 * bsize.width), 0, (bsize.width + (wsize.width - 3 * bsize.width)), bsize.height,
-						 (SWP_NOZORDER | SWP_SHOWWINDOW));
-
 		} break;
 	case WM_CREATE:
 		{
 			WINDOWSIZE bsize = GetButtonSize(window);
-			WINDOWSIZE wsize = GetWindowSize(window);
 			CREATESTRUCT cs = *((CREATESTRUCT *) lparam);
 			// Warning: If for some reason in the future this window gets destroyed
 			// and recreated throughout the run-life of the application, this will leak memory.
@@ -91,14 +83,6 @@ static LRESULT CALLBACK ActionWindowProc(HWND window, UINT msg, WPARAM wparam, L
 										   0,
 										   cs.hInstance,
 										   0);
-
-			buttons->quit = CreateWindow("BUTTON", "Quit",
-										 (BS_DEFPUSHBUTTON | BS_FLAT | WS_VISIBLE | WS_CHILD),
-										 (2 * bsize.width), 0, bsize.width + (wsize.width - 3 * bsize.width),  bsize.height,
-										 window,
-										 0,
-										 cs.hInstance,
-										 0);
 			SetWindowLongPtr(window, 0, (LONG_PTR) buttons);
 		} break;
 	}
