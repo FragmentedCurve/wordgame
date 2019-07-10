@@ -6,38 +6,8 @@
 
 #define INDEX_INPUT   0
 #define INDEX_LETTERS 1 * sizeof(LONG_PTR)
-#define INDEX_FONT    2 * sizeof(LONG_PTR)
 
 #define Y_OFFSET (1 - (RATIO_ACTION + RATIO_STATUS + RATIO_INPUT))
-
-
-internal HFONT MakeFont(HWND window, int width, int height)
-{
-	// TODO: Tweak the fonts, make them look good.
-	HFONT font = (HFONT) GetWindowLongPtr(window, INDEX_FONT);
-	DeleteObject(font);
-	
-	font = CreateFontA(
-					   height / 2, // int    cHeight,
-					   width / 12, // int    cWidth,
-					   0,          // int    cEscapement,
-					   0,          // int    cOrientation,
-					   FW_BLACK,   // int    cWeight,
-					   0, // DWORD  bItalic,
-					   0, // DWORD  bUnderline,
-					   0, // DWORD  bStrikeOut,
-					   0, // DWORD  iCharSet,
-					   0, // DWORD  iOutPrecision,
-					   0, // DWORD  iClipPrecision,
-					   0, // DWORD  iQuality,
-					   0, // DWORD  iPitchAndFamily,
-					   0  // LPCSTR pszFaceName
-					   );
-
-	SetWindowLongPtr(window, INDEX_FONT, (LONG_PTR) font);
-
-	return font;
-}
 
 static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -56,23 +26,8 @@ static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LP
 			wsize.height = psize.height * RATIO_INPUT;
 			
 			MoveWindow(window, 0, y, wsize.width, wsize.height, FALSE);
-
-			SetWindowPos(
-						 input_text,
-						 NULL,
-						 0, 0, wsize.width, wsize.height / 2,
-						 (SWP_NOZORDER | SWP_SHOWWINDOW));
-			SetWindowPos(
-						 letters_text,
-						 NULL,
-						 0, wsize.height / 2, wsize.width, wsize.height / 2,
-						 (SWP_NOZORDER | SWP_SHOWWINDOW));
-
-			HFONT font = MakeFont(window, wsize.width, wsize.height);
-			
-			// TODO: This is leaking memory. Find a fix or maybe report this to Microsoft.
-			SendMessage(input_text, WM_SETFONT, (WPARAM) font, TRUE);
-			SendMessage(letters_text, WM_SETFONT, (WPARAM) font, TRUE);
+			MoveWindow(input_text, 0, 0, wsize.width, wsize.height / 2, TRUE);
+			MoveWindow(letters_text, 0, wsize.height / 2, wsize.width, wsize.height / 2, TRUE);
 		} break;
 	case WM_PLAYERINPUT:
 		{
@@ -91,7 +46,7 @@ static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LP
 		{
 			RECT rc;
 			HWND letters_text = (HWND) GetWindowLongPtr(window, INDEX_LETTERS);
-			HBRUSH bg_brush = CreateSolidBrush(BGCOLOR); // TODO: Does this have to be freed?
+			HBRUSH bg_brush = CreateSolidBrush(BGCOLOR);
 			HDC dc = GetDC(letters_text);
 			char *str = (char *) lparam;
 			GetClientRect(letters_text, &rc);
@@ -102,32 +57,37 @@ static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LP
 		} break;
 	case WM_CREATE:
 		{
-			HWND input_text;
-			HWND letters_text;
-
 			WINDOWSIZE wsize = GetWindowSize(window);
 			CREATESTRUCT cs = *((CREATESTRUCT *) lparam);
 
-			input_text = CreateWindow(
-									  "STATIC",
-									  "",
-									  (WS_VISIBLE | WS_CHILD | SS_CENTER | SS_SUNKEN | SS_ENDELLIPSIS | SS_CENTERIMAGE),
-									  0, 0, wsize.width, wsize.height / 2,
-									  window,
-									  0,
-									  cs.hInstance,
-									  0);
-			letters_text = CreateWindow(
-									  "STATIC",
-									  "",
-									  (WS_VISIBLE | WS_CHILD | SS_CENTER | SS_SUNKEN | SS_ENDELLIPSIS | SS_CENTERIMAGE),
-									  0, wsize.height / 2, wsize.width, wsize.height / 2,
-									  window,
-									  0,
-									  cs.hInstance,
-									  0);
+			HWND input_text = CreateWindow(
+										   "STATIC",
+										   "",
+										   (WS_VISIBLE | WS_CHILD | SS_CENTER | SS_SUNKEN | SS_ENDELLIPSIS | SS_CENTERIMAGE),
+										   0, 0, wsize.width, wsize.height / 2,
+										   window,
+										   0,
+										   cs.hInstance,
+										   0);
+			HWND letters_text = CreateWindow(
+											 "STATIC",
+											 "",
+											 (WS_VISIBLE | WS_CHILD | SS_CENTER | SS_ENDELLIPSIS | SS_CENTERIMAGE),
+											 0, wsize.height / 2, wsize.width, wsize.height / 2,
+											 window,
+											 0,
+											 cs.hInstance,
+											 0);
 
-			HFONT font = MakeFont(window, wsize.width, wsize.height);
+			HDC dc = GetDC(window);
+			HFONT font = CreateFontA(
+									 -MulDiv(16, GetDeviceCaps(dc, LOGPIXELSY), 72),
+									 -MulDiv(16, GetDeviceCaps(dc, LOGPIXELSY), 72),
+									 0, 0, FW_BLACK, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+									 OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
+									 DEFAULT_PITCH, "Verdana\0");
+
+			ReleaseDC(window, dc);
 			SendMessage(input_text, WM_SETFONT, (WPARAM) font, TRUE);
 			SendMessage(letters_text, WM_SETFONT, (WPARAM) font, TRUE);
 			
@@ -153,6 +113,7 @@ BOOL InputMakeWindow(HWND *hwnd, HWND parent, HINSTANCE instance)
 	wc.hbrBackground = bg_brush;
 	wc.lpszClassName = CLASS_NAME_INPUT;
 	wc.cbWndExtra = sizeof(LONG_PTR) * 2;
+	wc.hCursor = LoadCursor(NULL, (LPCTSTR)IDC_ARROW);
 	
 	if (!RegisterClass(&wc)) {
 		return FALSE;
