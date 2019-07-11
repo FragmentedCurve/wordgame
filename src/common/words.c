@@ -70,6 +70,7 @@ bool is_similar(const char *word1, const char *word2)
 */
 char *rand_letters(int len, int repeat_max)
 {
+	// TODO: Optimize this function.
 	char *letters = calloc(len + 1, sizeof(char));
 	srand((unsigned int) time(NULL));
 
@@ -82,4 +83,21 @@ char *rand_letters(int len, int repeat_max)
 	}
 	
 	return letters;
+}
+
+void rand_letters_buf(char *letters, int len, int repeat_max)
+{
+	int counts[ALPHABET_SIZE] = {0};
+	
+	srand((unsigned int) time(NULL));
+
+	for (int i = 0; i < len; i++) {
+		int index = 0;
+		do {
+			// Allow a letter to repeat repeat_max times.
+			index = (rand() % ALPHABET_SIZE);
+		} while (counts[index] >= repeat_max);
+		letters[i] = index + 'A';
+		counts[index]++;
+	}
 }

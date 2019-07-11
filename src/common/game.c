@@ -80,11 +80,12 @@ GameError play_word(Game game, char *word)
 void reset_game(Game *game, unsigned int word_size)
 {
 	free_trienode(game->played_words);
-	free(game->letters);
+	//free(game->letters);
 	game->word_size = word_size;
 	game->played_words = new_trienode();
-	game->letters = rand_letters(game->word_size, game->repeat_max);
+	//game->letters = rand_letters(game->word_size, game->repeat_max);
 	clear_buffer(*game);
+	rand_letters_buf(game->letters, game->word_size, game->repeat_max);
 }
 
 /*

@@ -55,7 +55,11 @@ internal void player_input(Game game, HWND input, char c)
 	} else if (c == VK_BACK) {
 		result = delete_char(game);
 	} else if (c == VK_RETURN) {
-		result = play(game);
+		if (strlen(game.play_buffer) == 0) {
+			HWND main = GetParent(input);
+			PostMessage(main, WM_SHUFFLE, 0, 0);
+		} else
+			result = play(game);
 	}
 
 	switch (result) {
@@ -68,33 +72,23 @@ internal void player_input(Game game, HWND input, char c)
 				update_playboard(game, playboard);
 			}
 		} break;
-	case INPUT_BUF_FULL:
-		{
-			//DEBUG("Too many letters!");
-		} break;
-	case INPUT_BUF_EMPTY:
-		{
-			//DEBUG("No letters to delete.");
-		} break;
 	case WORD_PLAYED:
 		{
-			//DEBUG("You already played that word!");
 			clear_buffer(game);
-			SendMessage(input, WM_PLAYERINPUT, 0, (LPARAM) "Already Played!");
-		} break;
-	case WRONG_LETTER:
-		{
-			//DEBUG("That's not one of the given random letters!");
+			PostMessage(input, WM_PLAYERINPUT, 0, (LPARAM) "Already Played!");
 		} break;
 	case INCORRECT_WORD:
 		{
 			clear_buffer(game);
-			SendMessage(input, WM_PLAYERINPUT, 0, (LPARAM) "Incorrect word!");
-			//DEBUG("That's not even a word!");
+			PostMessage(input, WM_PLAYERINPUT, 0, (LPARAM) "Incorrect word!");
 		} break;
+		
+	case INPUT_BUF_FULL:
+	case INPUT_BUF_EMPTY:
+	case WRONG_LETTER: // Fall-through
 	default:
 		{
-			DEBUG("I don't know what happened. Maybe you do.");
+			// Do nothing
 		} break;
 	}
 }
@@ -133,9 +127,9 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT msg, WPARAM wparam, LPARAM lpa
 	case WM_NEWGAME:
 		{
 			reset_game(game, WORD_SIZE);
-			SendMessage(input, WM_PLAYERINPUT, 0, (LPARAM) game->play_buffer);
 			SendMessage(input, WM_GAMELETTERS, 0, (LPARAM) game->letters);
-			update_playboard(*game, playboard);
+			SendMessage(input, WM_PLAYERINPUT, 0, (LPARAM) "Start Typing");
+ 			update_playboard(*game, playboard);
 			SetFocus(window);
 		} break;
 	case WM_SHUFFLE:
@@ -207,6 +201,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, 
 	input = (HWND) GetWindowLongPtr(main_win, INDEX_WINPUT);
 	playboard = (HWND) GetWindowLongPtr(main_win, INDEX_WPLAYBOARD);
 	SendMessage(input, WM_GAMELETTERS, 0, (LPARAM) game.letters);
+	PostMessage(input, WM_PLAYERINPUT, 0, (LPARAM) "Start Typing");
 	update_playboard(game, playboard);
 
 	MSG msg;
@@ -214,6 +209,6 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, 
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
-	
+
 	return 0;
 }

@@ -1,10 +1,3 @@
-#ifdef _WIN32
-#define DEBUG(msg) MessageBox(NULL, TEXT(msg), "DEBUG", 0)
-#else
-#define DEBUG(msg) fprintf(stderr, "DEBUG: %s\n", msg)
-#endif
-
-#include <stdio.h>
 #include <stdbool.h>
 
 #define ALPHABET_SIZE 26 // TODO: Make the alphabet variable to support any kind of wordlist.
@@ -18,7 +11,6 @@ typedef struct TrieNode {
 	int is_word;
 } TrieNode;
 
-/* TODO: Make sure all these error states are being used somewhere. */
 typedef enum GameError {
 				NONE = 0,
 
@@ -73,3 +65,26 @@ bool in_word(char c, const char *word);
 int in_word_count(char c, const char *word);
 bool is_similar(const char *word1, const char *word2);
 char *rand_letters(int len, int repeat_max);
+void rand_letters_buf(char *letters, int len, int repeat_max);
+
+
+/* Debugging Helpers */
+#ifdef _DEBUG
+
+#include <time.h>
+
+#define START_TIME()							\
+	char _time_buf[128] = {0};					\
+	DWORD _start_time = GetTickCount();
+
+#define END_TIME()														\
+	DWORD _lapse_time = GetTickCount() - _start_time;					\
+	snprintf(_time_buf, 128, "%lld s %lld ns\n", (long long) 0, (long long) _lapse_time); \
+	DEBUG(_lapse_time <= 0 ? "FAILED" : _time_buf);
+
+#ifdef _WIN32
+#define DEBUG(msg) MessageBox(NULL, TEXT (msg), "DEBUG", 0)
+#else
+#define DEBUG(msg) fprintf(stderr, "DEBUG: %s\n", msg)
+#endif
+#endif // DEBUG

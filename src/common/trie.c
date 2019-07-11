@@ -10,7 +10,6 @@ TrieNode *new_trienode()
 	TrieNode *node = calloc(1, sizeof(TrieNode));
 	assert(node);
 
-	//memset(node->children, 0, sizeof(TrieNode *) * ALPHABET_SIZE);
 	node->is_word= false;
 	
 	return node;
@@ -22,7 +21,8 @@ void free_trienode(TrieNode *root)
 		return;
 	
 	for (int i = 0; i < ALPHABET_SIZE; i++) {
-		free_trienode(root->children[i]);
+		if (root->children[i])
+			free_trienode(root->children[i]);
 	}
 	free(root);	
 }

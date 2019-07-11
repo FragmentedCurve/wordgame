@@ -33,8 +33,6 @@ static LRESULT CALLBACK ActionWindowProc(HWND window, UINT msg, WPARAM wparam, L
 			} else if (b == buttons->shuffle) {
 				HWND parent = GetParent(window);
 				PostMessage(parent, WM_SHUFFLE, 0, 0);
-			} else {
-				PostQuitMessage(0);
 			}
 		} break;
 	case WM_SIZE:
@@ -48,24 +46,14 @@ static LRESULT CALLBACK ActionWindowProc(HWND window, UINT msg, WPARAM wparam, L
 
 			WINDOWSIZE bsize = GetButtonSize(window);
 			struct ActionButtons *buttons = (struct ActionButtons *) GetWindowLongPtr(window, 0);
-			
-			SetWindowPos(
-						 buttons->new_game,
-						 NULL,
-						 0, 0, bsize.width, bsize.height,
-						 (SWP_NOZORDER | SWP_SHOWWINDOW));
-			SetWindowPos(
-						 buttons->shuffle,
-						 NULL,
-						 bsize.width, 0, bsize.width, bsize.height,
-						 (SWP_NOZORDER | SWP_SHOWWINDOW));
+
+			MoveWindow(buttons->new_game, 0, 0, bsize.width, bsize.height, TRUE);
+			MoveWindow(buttons->shuffle, bsize.width, 0, bsize.width, bsize.height, TRUE);
 		} break;
 	case WM_CREATE:
 		{
 			WINDOWSIZE bsize = GetButtonSize(window);
 			CREATESTRUCT cs = *((CREATESTRUCT *) lparam);
-			// Warning: If for some reason in the future this window gets destroyed
-			// and recreated throughout the run-life of the application, this will leak memory.
 			struct ActionButtons *buttons = calloc(1, sizeof(struct ActionButtons));
 			
 			buttons->new_game = CreateWindow("BUTTON", "New Game",
@@ -85,6 +73,14 @@ static LRESULT CALLBACK ActionWindowProc(HWND window, UINT msg, WPARAM wparam, L
 										   0);
 			SetWindowLongPtr(window, 0, (LONG_PTR) buttons);
 		} break;
+	case WM_DESTROY:
+		{
+			// This code will most likely never see the CPU.
+			struct ActionButtons *buttons = (struct ActionButtons *) GetWindowLongPtr(window, 0);
+			SendMessage(buttons->new_game, WM_DESTROY, 0, 0);
+			SendMessage(buttons->shuffle, WM_DESTROY, 0, 0);
+			free(buttons);
+		} break;
 	}
 
 	return DefWindowProc(window, msg, wparam, lparam);
@@ -103,7 +99,8 @@ BOOL ActionMakeWindow(HWND *hwnd, HWND parent, HINSTANCE instance)
 	wc.hbrBackground = bg_brush;
 	wc.lpszClassName = CLASS_NAME_ACTION;
 	wc.cbWndExtra = sizeof(LONG_PTR);
-
+	wc.hCursor = LoadCursor(NULL, (LPCTSTR)IDC_ARROW);
+	
 	if (!RegisterClass(&wc)) {
 		return FALSE;
 	}

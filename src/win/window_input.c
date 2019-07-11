@@ -33,7 +33,7 @@ static LRESULT CALLBACK InputWindowProc(HWND window, UINT msg, WPARAM wparam, LP
 		{
 			RECT rc;
 			HWND input_text = (HWND) GetWindowLongPtr(window, INDEX_INPUT);
-			HBRUSH bg_brush = CreateSolidBrush(BGCOLOR); // TODO: Does this have to be freed?
+			HBRUSH bg_brush = CreateSolidBrush(BGCOLOR); // TODO: Don't keep remaking the same brush
 			HDC dc = GetDC(input_text);
 			char *str = (char *) lparam;
 			GetClientRect(input_text, &rc);
