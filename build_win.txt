@@ -1,0 +1,10 @@
+build/trie.o  src/common/trie.c  src/common/common.h
+build/words.o src/common/words.c src/common/common.h
+build/game.o  src/common/game.c  src/common/common.h
+
+build/common6.o src/dicts/common6.c
+
+build/mm.o               src/win/mm.c               src/win/mm.h
+build/window_action.o    src/win/window_action.c    src/win/mm.h
+build/window_input.o     src/win/window_input.c     src/win/mm.h
+build/window_playboard.o src/win/window_playboard.c src/win/mm.h

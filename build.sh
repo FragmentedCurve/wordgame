@@ -9,6 +9,7 @@
 ###     [ (test)
 ###     echo
 ###     stat
+###     uname
 ###
 ### THIS BUILD SYSTEM PROVIDES
 ###
@@ -17,7 +18,6 @@
 ###   where_am_i
 ###   is_changed   [object file] [source file]
 ###   compile_all  [compile command]
-###   set_build    [array variable name]
 
 where_am_i() {
 	[ -e "C:\\" ] && echo "WINDOWS"
@@ -31,32 +31,29 @@ is_changed() {
 	[ ${f1} -lt ${f2} ]
 }
 
-# compile_all [compile command]
+# compile_all [compile command] < [build file]
 # compile command interface: command [object file] [source file]
 compile_all() {
-	if [ $((${#BUILD[@]} % 2)) -ne 0 ]; then
-		echo "BUILD SCRIPT ERROR: Your BUILD variable doesn't have "
-		echo "                    an even number of entries. Every "
-		echo "                    source file should have an object "
-		echo "                    target following it."
-		exit 1
-	fi
-	
-	for i in `seq 0 2 $((${#BUILD[@]} - 1))`; do
-		# Source files are even indexes.
-		# Output files are the following odd index.
-		src=${BUILD[$i]}
-		obj=${BUILD[$((i + 1))]}
+	while read BUILD; do
+		if [ -z "${BUILD}" ]; then
+			continue
+		fi
+		
+		BUILD=(${BUILD})
+		obj="${BUILD[0]}"
+		src="${BUILD[1]}"
 		if is_changed ${obj} ${src}; then
 			echo "Compiling ${src} -> ${obj}"
 			eval ${1} ${obj} ${src} || exit 1
+		else
+			for i in `seq 2 $((${#BUILD[@]} - 1))`; do
+				if is_changed ${obj} ${BUILD[$i]}; then
+					echo "Compiling ${src} -> ${obj}"
+					eval ${1} ${obj} ${src} || exit 1
+				fi
+			done
 		fi
 	done
-}
-
-# set_build [array variable name]
-set_build() {
-	eval "BUILD=(\${${1}[@]})"
 }
 
 ################################################################################
@@ -78,43 +75,35 @@ make_dicts() {
 	#./tools/wl2array.py resources/urbandictionary.wl urban > src/dicts/urban.c
 }
 
+build_linux() {
+	cc=${1}
+	
+	compile_all ${cc} < build_linux.txt
+	clang -o build/termwords build/trie.o build/words.o build/game.o build/main.o build/common6.o
+}
+
+build_win() {
+	cc=${1}
+	
+	compile_all ${cc} < build_win.txt
+	clang -o build/mm.exe -l user32.lib -l gdi32.lib build/trie.o build/words.o build/game.o build/common6.o build/mm.o build/window_action.o build/window_input.o build/window_playboard.o
+	
+}
+
 # build [compile command]
 build() {
-	LINUX_BUILD=(
-		src/common/trie.c   build/trie.o
-		src/common/words.c  build/words.o
-		src/common/game.c   build/game.o
-		src/dicts/common6.c build/common6.o
-		src/termword/main.c build/main.o
-	)
-
-	WIN_BUILD=(
-		src/common/trie.c           build/trie.o
-		src/common/words.c          build/words.o
-		src/common/game.c           build/game.o
-		src/dicts/common6.c         build/common6.o
-		src/win/mm.c                build/mm.o
-		src/win/window_action.c     build/window_action.o
-		src/win/window_input.c      build/window_input.o
-		src/win/window_playboard.c  build/window_playboard.o
-	)
-
 	cc=${1}
-
-	case `where_am_i` in
-		'LINUX')
-			set_build LINUX_BUILD
-			link='clang -o build/termwords build/trie.o build/words.o build/game.o build/main.o build/common6.o'
-			;;
-		'WINDOWS')
-			set_build WIN_BUILD
-			link='clang -o build/mm.exe -l user32.lib -l gdi32.lib build/trie.o build/words.o build/game.o build/common6.o build/mm.o build/window_action.o build/window_input.o build/window_playboard.o'
-			;;
-	esac
 	
 	[ -e build ] || (mkdir build 2> /dev/null)
-	compile_all ${cc}
-	eval ${link}
+	
+	case `where_am_i` in
+		'LINUX')
+			build_linux ${cc}
+		;;
+		'WINDOWS')
+			build_win ${cc}
+		;;
+	esac
 }
 
 case $1 in
