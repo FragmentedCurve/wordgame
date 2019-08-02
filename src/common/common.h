@@ -71,20 +71,10 @@ void rand_letters_buf(char *letters, int len, int repeat_max);
 /* Debugging Helpers */
 #ifdef _DEBUG
 
-#include <time.h>
-
-#define START_TIME()							\
-	char _time_buf[128] = {0};					\
-	DWORD _start_time = GetTickCount();
-
-#define END_TIME()														\
-	DWORD _lapse_time = GetTickCount() - _start_time;					\
-	snprintf(_time_buf, 128, "%lld s %lld ns\n", (long long) 0, (long long) _lapse_time); \
-	DEBUG(_lapse_time <= 0 ? "FAILED" : _time_buf);
-
 #ifdef _WIN32
 #define DEBUG(msg) MessageBox(NULL, TEXT (msg), "DEBUG", 0)
 #else
 #define DEBUG(msg) fprintf(stderr, "DEBUG: %s\n", msg)
 #endif
-#endif // DEBUG
+
+#endif // _DEBUG
