@@ -7,8 +7,8 @@
 #include <time.h>
 #include <assert.h>
 
-#include <common.h>
-#include <dict.h>
+#include "common.h"
+#include "dict.h"
 
 size_t getline(char **lineptr, size_t *n, FILE *stream){
 	int c;
