@@ -19,9 +19,23 @@
 ###   is_changed   [object file] [source file]
 ###   compile_all  [compile command]
 
+set -e 
+
 where_am_i() {
-	[ -e "C:\\" ] && echo "WINDOWS"
-	[ `uname` = "Linux" ] && echo "LINUX"
+	if [ -e "C:\\" ]; then
+		echo "WINDOWS"
+		return
+	fi
+	
+	if [ `uname` = "Linux" ]; then
+		echo "LINUX"
+		return
+	fi
+
+	if [ `uname` = "Haiku" ]; then
+		echo "HAIKU"
+		return
+	fi
 }
 
 # is_changed [object file] [source file]
@@ -68,6 +82,10 @@ compile_c_release() {
 	clang -Wall -Werror -O2 -std=c99 -Isrc/common/ -Isrc/dicts/ -o ${1} -c ${2}
 }
 
+compile_cpp_debug() {
+	clang-cpp -Wall -Werror -g -O0 -Isrc/common/ -Isrc/dicts/ -o ${1} -c ${2}
+}
+
 make_dicts() {
 	./tools/wl2array.py resources/en-common.wl common6 6 > src/dicts/common6.c
 	#./tools/wl2array.py resources/en-common.wl common > src/dicts/common.c
@@ -75,17 +93,41 @@ make_dicts() {
 	#./tools/wl2array.py resources/urbandictionary.wl urban > src/dicts/urban.c
 }
 
+build_haiku() {
+	cc=${1}
+	
+	compile_c_debug() {
+		gcc -Wall -Werror -g -O0 -std=c99 -Isrc/common/ -Isrc/dicts/ -o ${1} -c ${2} 
+	}
+	
+	compile_cpp_debug() {
+		g++ -Wall -Werror -g -O0 -Isrc/common/ -Isrc/dicts/ -o ${1} -c ${2}
+	}
+	
+	compile_c_release() {
+		gcc -Wall -Werror -O2 -std=c99 -Isrc/common/ -Isrc/dicts/ -o ${1} -c ${2}
+	}
+	
+	compile_cpp_release() {
+		g++ -Wall -Werror -O2 -Isrc/common/ -Isrc/dicts/ -o ${1} -c ${2}
+	}
+	
+	compile_all compile_c_${cc} < build_common.txt
+	compile_all compile_cpp_${cc} < build_haiku.txt
+	g++ -o build/mm -lbe build/trie.o build/words.o build/game.o build/main.o build/common6.o
+}
+
 build_linux() {
 	cc=${1}
 	
-	compile_all ${cc} < build_linux.txt
+	compile_all compile_c_${cc} < build_linux.txt
 	clang -o build/termwords build/trie.o build/words.o build/game.o build/main.o build/common6.o
 }
 
 build_win() {
 	cc=${1}
 	
-	compile_all ${cc} < build_win.txt
+	compile_all compile_c_${cc} < build_win.txt
 	clang -o build/mm.exe -l user32.lib -l gdi32.lib build/trie.o build/words.o build/game.o build/common6.o build/mm.o build/window_action.o build/window_input.o build/window_playboard.o
 	
 }
@@ -103,15 +145,18 @@ build() {
 		'WINDOWS')
 			build_win ${cc}
 		;;
+		'HAIKU')
+			build_haiku ${cc}
+		;;
 	esac
 }
 
 case $1 in
 	'debug')
-		build compile_c_debug
+		build debug
 		;;
 	'release')
-		build  compile_c_release
+		build release
 		;;
 	'dicts')
 		make_dicts

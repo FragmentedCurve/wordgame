@@ -1,0 +1,4 @@
+build/trie.o  src/common/trie.c  src/common/common.h
+build/words.o src/common/words.c src/common/common.h
+build/game.o  src/common/game.c  src/common/common.h
+build/common6.o src/dicts/common6.c
