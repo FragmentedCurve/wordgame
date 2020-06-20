@@ -1,6 +1,11 @@
 #include <cstdio>
 #include <Be.h>
 
+extern "C" {
+	#include "dict.h"
+	#include "common.h"
+}
+
 struct MyBox : public BBox {
 	MyBox(BRect r) : BBox(r, "Activity", B_FOLLOW_ALL){}
 	void KeyDown(const char* bytes, int32 numBytes);
@@ -13,7 +18,8 @@ struct MainWindow : public BWindow {
 private:
 	char current_word[7];
 	float button_height;
-	MyBox* activity;
+	MyBox* status;
+	MyBox* workspace;
 	BButton* newgame;
 	BButton* shuffle;
 };
@@ -28,14 +34,14 @@ MainWindow::MainWindow() : BWindow(BRect(100, 100, 400, 400), "Mingling Masjucle
 	BRect s = newgame->Bounds();
 	button_height = s.bottom;
 	
-	activity = new MyBox(BRect(0, 0, r.right - r.left, r.bottom - r.top - button_height));
+	status = new MyBox(BRect(0, 0, r.right - r.left, r.bottom - r.top - button_height));
 	newgame->MoveTo(0, r.bottom - r.top - button_height);
 	shuffle->MoveTo((r.right - r.left) / 2, r.bottom - r.top - button_height);
 	
 	this->AddChild(newgame);
 	this->AddChild(shuffle);
-	this->AddChild(activity);
-	activity->MakeFocus();
+	this->AddChild(status);
+	status->MakeFocus();
 	
 	memset(current_word, 0, 7);
 }
@@ -64,6 +70,8 @@ void MyBox::KeyDown(const char* bytes, int32 numBytes)
 
 int main(int argc, char **argv)
 {
+	Game game = new_game(wl_common6, wl_common6_len, 6, 2);
+	destroy_game(game);
 	BApplication* app = new BApplication("application/game");
 	MainWindow* win = new MainWindow();
 	
