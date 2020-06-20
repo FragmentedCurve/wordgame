@@ -119,14 +119,16 @@ build_haiku() {
 
 build_linux() {
 	cc=${1}
-	
+
+	compile_all compile_c_${cc} < build_common.txt
 	compile_all compile_c_${cc} < build_linux.txt
 	clang -o build/termwords build/trie.o build/words.o build/game.o build/main.o build/common6.o
 }
 
 build_win() {
 	cc=${1}
-	
+
+	compile_all compile_c_${cc} < build_common.txt
 	compile_all compile_c_${cc} < build_win.txt
 	clang -o build/mm.exe -l user32.lib -l gdi32.lib build/trie.o build/words.o build/game.o build/common6.o build/mm.o build/window_action.o build/window_input.o build/window_playboard.o
 	
